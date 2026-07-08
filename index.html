@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Nathaniel's Apps</title>
+<style>
+  :root {
+    --bg: #0c0a09;
+    --panel: #1c1917;
+    --panel-2: #292524;
+    --line: #363130;
+    --text: #e7e5e4;
+    --muted: #a8a29e;
+    --faint: #78716c;
+    --accent: #34d399;
+    --accent-ink: #052e1f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  header { margin-bottom: 36px; }
+  h1 { font-size: 2rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0; font-size: 0.95rem; }
+
+  .grid { display: flex; flex-direction: column; gap: 14px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 18px 16px;
+  }
+  .card-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .name { font-size: 1.2rem; font-weight: 600; margin: 0; }
+  .ver {
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.75rem; color: var(--muted);
+    background: var(--panel-2); border: 1px solid var(--line);
+    padding: 1px 7px; border-radius: 999px;
+  }
+  .tagline { color: var(--muted); margin: 8px 0 0; font-size: 0.95rem; }
+
+  .meta {
+    margin-top: 14px; display: flex; gap: 14px; flex-wrap: wrap;
+    font-size: 0.8rem; color: var(--faint);
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  }
+
+  .row { margin-top: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .dl {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--accent); color: var(--accent-ink);
+    text-decoration: none; font-family: system-ui, sans-serif;
+    font-weight: 650; font-size: 0.9rem;
+    padding: 10px 18px; border-radius: 8px;
+    transition: filter .15s ease;
+  }
+  .dl:hover { filter: brightness(1.1); }
+  .dl svg { width: 16px; height: 16px; }
+
+  details.hash { margin-top: 12px; }
+  details.hash summary {
+    cursor: pointer; font-size: 0.78rem; color: var(--faint);
+    font-family: system-ui, sans-serif; list-style: none;
+  }
+  details.hash summary::-webkit-details-marker { display: none; }
+  details.hash summary::before { content: '▸ '; }
+  details.hash[open] summary::before { content: '▾ '; }
+  code.sha {
+    display: block; margin-top: 8px; padding: 8px 10px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.7rem; color: var(--muted);
+    word-break: break-all; user-select: all;
+  }
+
+  .empty, .error {
+    border: 1px dashed var(--line); border-radius: 12px;
+    padding: 32px 20px; text-align: center; color: var(--faint);
+  }
+  .error { border-color: #7f1d1d; color: #fca5a5; }
+
+  .help {
+    margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--line);
+    font-size: 0.88rem; color: var(--muted);
+  }
+  .help h2 { font-size: 1rem; color: var(--text); margin: 0 0 10px; }
+  .help ol { padding-left: 20px; margin: 0; }
+  .help li { margin-bottom: 7px; }
+  .help .note { margin-top: 16px; font-size: 0.82rem; color: var(--faint); }
+
+  @media (max-width: 480px) { .wrap { padding: 28px 16px 60px; } h1 { font-size: 1.6rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Nathaniel's Apps</h1>
+    <p class="sub">A small, private collection. Install straight to your Android phone.</p>
+  </header>
+
+  <main id="grid" class="grid">
+    <div class="empty">Loading…</div>
+  </main>
+
+  <section class="help">
+    <h2>Installing (first time only)</h2>
+    <ol>
+      <li>Tap <strong>Download</strong> on any app above.</li>
+      <li>Android will warn you the file "can harm your device." That warning appears for every app not from the Play Store. Tap <strong>Download anyway</strong>.</li>
+      <li>Open the downloaded file. You'll be asked to allow installs from your browser — tap <strong>Settings</strong>, enable it, then go back.</li>
+      <li>Tap <strong>Install</strong>.</li>
+    </ol>
+    <p class="note">
+      Updates install over the old version and keep your data, as long as the version number went up.
+      If an update refuses to install, uninstall the old one first and reinstall — that means the signing key changed.
+    </p>
+  </section>
+</div>
+
+<script>
+(function () {
+  var grid = document.getElementById('grid');
+
+  function fmtSize(bytes) {
+    if (!bytes && bytes !== 0) return '—';
+    var mb = bytes / 1048576;
+    return mb >= 1 ? mb.toFixed(1) + ' MB' : Math.round(bytes / 1024) + ' KB';
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function downloadUrl(cfg, app) {
+    return 'https://github.com/' + cfg.owner + '/' + cfg.repo +
+           '/releases/download/' + encodeURIComponent(app.tag) + '/' + encodeURIComponent(app.file);
+  }
+
+  function card(cfg, app) {
+    var c = el('article', 'card');
+
+    var top = el('div', 'card-top');
+    top.appendChild(el('h2', 'name', app.name));
+    if (app.version) top.appendChild(el('span', 'ver', 'v' + app.version));
+    c.appendChild(top);
+
+    if (app.tagline) c.appendChild(el('p', 'tagline', app.tagline));
+
+    var meta = el('div', 'meta');
+    meta.appendChild(el('span', null, fmtSize(app.size)));
+    meta.appendChild(el('span', null, fmtDate(app.published)));
+    c.appendChild(meta);
+
+    var row = el('div', 'row');
+    var a = el('a', 'dl');
+    a.href = downloadUrl(cfg, app);
+    a.setAttribute('download', '');
+    a.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M4 21h16"/></svg>';
+    a.appendChild(document.createTextNode('Download'));
+    row.appendChild(a);
+    c.appendChild(row);
+
+    if (app.sha256) {
+      var d = el('details', 'hash');
+      d.appendChild(el('summary', null, 'Verify checksum'));
+      d.appendChild(el('code', 'sha', app.sha256));
+      c.appendChild(d);
+    }
+    return c;
+  }
+
+  fetch('apps.json?t=' + Date.now())
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (cfg) {
+      grid.innerHTML = '';
+      var apps = (cfg.apps || []).slice().sort(function (a, b) {
+        return String(b.published || '').localeCompare(String(a.published || ''));
+      });
+      if (!apps.length) {
+        grid.appendChild(el('div', 'empty', 'No apps published yet.'));
+        return;
+      }
+      apps.forEach(function (app) { grid.appendChild(card(cfg, app)); });
+    })
+    .catch(function (err) {
+      grid.innerHTML = '';
+      grid.appendChild(el('div', 'error', 'Could not load the app list. (' + err.message + ')'));
+    });
+})();
+</script>
+</body>
+</html>
