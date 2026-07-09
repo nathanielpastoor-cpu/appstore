@@ -21,13 +21,34 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location -Path $PSScriptRoot
 
+# Windows PowerShell 5.1 wraps a native command's stderr in ErrorRecords and,
+# under $ErrorActionPreference='Stop', promotes them to terminating errors even
+# when the command exited 0. gh and git both write routine progress to stderr,
+# so run them through here: relax the preference for the call and branch on the
+# real exit code ($LASTEXITCODE) instead of $?.
+function Invoke-Native {
+  param(
+    [Parameter(Mandatory)][string]$File,
+    [string[]]$Arguments = @(),
+    [switch]$Quiet
+  )
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    if ($Quiet) { & $File @Arguments 2>&1 | Out-Null }
+    else        { & $File @Arguments 2>&1 | ForEach-Object { Write-Host $_ } }
+  } finally {
+    $ErrorActionPreference = $prev
+  }
+  return $LASTEXITCODE
+}
+
 # --- preflight -------------------------------------------------------------
 if (-not (Test-Path -LiteralPath $Apk)) { throw "APK not found: $Apk" }
 if ($Version -notmatch '^\d+\.\d+(\.\d+)?$') { throw "Version must look like 1.2 or 1.2.3 (got '$Version')" }
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw "GitHub CLI 'gh' is not installed." }
 
-gh auth status *> $null
-if (-not $?) { throw "Not logged in to GitHub. Run: gh auth login" }
+if ((Invoke-Native gh @('auth','status') -Quiet) -ne 0) { throw "Not logged in to GitHub. Run: gh auth login" }
 
 $cfg = Get-Content -LiteralPath 'apps.json' -Raw | ConvertFrom-Json
 
@@ -42,8 +63,7 @@ $assetPath = Join-Path $assetDir $assetName
 
 # Existing release with this tag? Refuse rather than silently clobber a build
 # friends may already have installed.
-gh release view $tag *> $null
-if ($?) { throw "Release '$tag' already exists. Bump -Version, or delete it: gh release delete $tag --cleanup-tag" }
+if ((Invoke-Native gh @('release','view',$tag) -Quiet) -eq 0) { throw "Release '$tag' already exists. Bump -Version, or delete it: gh release delete $tag --cleanup-tag" }
 
 # gh names the asset after the file, so stage a copy under the public name.
 New-Item -ItemType Directory -Force -Path $assetDir | Out-Null
@@ -60,8 +80,8 @@ Write-Host "  sha256 $sha256"
 
 # --- upload ----------------------------------------------------------------
 $releaseNotes = if ($Notes) { $Notes } else { "$Name v$Version" }
-gh release create $tag $assetPath --title "$Name v$Version" --notes $releaseNotes | Out-Null
-if (-not $?) { throw "gh release create failed." }
+$rc = Invoke-Native gh @('release','create',$tag,$assetPath,'--title',"$Name v$Version",'--notes',$releaseNotes)
+if ($rc -ne 0) { throw "gh release create failed." }
 
 Remove-Item -Recurse -Force -LiteralPath $assetDir -ErrorAction SilentlyContinue
 
@@ -95,10 +115,9 @@ $json = $out | ConvertTo-Json -Depth 6
 [System.IO.File]::WriteAllText((Join-Path $PSScriptRoot 'apps.json'), $json + "`n")
 
 # --- push ------------------------------------------------------------------
-git add apps.json
-git commit -m "Publish $Name v$Version" | Out-Null
-git push | Out-Null
-if (-not $?) { throw "git push failed. apps.json is committed locally; push manually." }
+Invoke-Native git @('add','apps.json') | Out-Null
+Invoke-Native git @('commit','-m',"Publish $Name v$Version") -Quiet | Out-Null
+if ((Invoke-Native git @('push')) -ne 0) { throw "git push failed. apps.json is committed locally; push manually." }
 
 Write-Host ""
 Write-Host "Done. Live in ~1 min at:" -ForegroundColor Green
