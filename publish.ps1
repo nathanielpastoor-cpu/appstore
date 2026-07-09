@@ -74,9 +74,32 @@ $size   = [int64]$file.Length
 $sha256 = (Get-FileHash -LiteralPath $assetPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $today  = (Get-Date).ToString('yyyy-MM-dd')
 
+# Best-effort: read the Android applicationId from the APK via aapt so the
+# storefront's Obtainium button can identify the app. Empty if aapt isn't found
+# (the storefront falls back to a repo+slug id); never fatal.
+$appId = ''
+try {
+  $sdk = if ($env:ANDROID_HOME)     { $env:ANDROID_HOME }
+         elseif ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT }
+         else { @("$env:LOCALAPPDATA\Android\Sdk", "$env:USERPROFILE\android-sdk") |
+                Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1 }
+  if ($sdk) {
+    $aapt = Get-ChildItem -LiteralPath (Join-Path $sdk 'build-tools') -Filter 'aapt.exe' -Recurse -ErrorAction SilentlyContinue |
+            Sort-Object FullName | Select-Object -Last 1
+    if ($aapt) {
+      $eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+      $badging = & $aapt.FullName dump badging $assetPath 2>$null
+      $ErrorActionPreference = $eap
+      $m = [regex]::Match(($badging -join "`n"), "package: name='([^']+)'")
+      if ($m.Success) { $appId = $m.Groups[1].Value }
+    }
+  }
+} catch { $appId = '' }
+
 Write-Host "Publishing $Name v$Version" -ForegroundColor Cyan
 Write-Host "  asset  $assetName  ($([math]::Round($size/1MB,1)) MB)"
 Write-Host "  sha256 $sha256"
+if ($appId) { Write-Host "  appId  $appId" }
 
 # --- upload ----------------------------------------------------------------
 $releaseNotes = if ($Notes) { $Notes } else { "$Name v$Version" }
@@ -98,6 +121,7 @@ $entry = [ordered]@{
   size      = $size
   sha256    = $sha256
   published = $today
+  appId     = $appId
 }
 
 $kept = @()

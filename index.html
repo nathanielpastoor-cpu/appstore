@@ -68,6 +68,10 @@
   .dl:hover { filter: brightness(1.1); }
   .dl svg { width: 16px; height: 16px; }
 
+  /* Secondary action: add to Obtainium (no download warning, auto-updates) */
+  .dl.obt { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .dl.obt:hover { background: rgba(52, 211, 153, 0.10); filter: none; }
+
   details.hash { margin-top: 12px; }
   details.hash summary {
     cursor: pointer; font-size: 0.78rem; color: var(--faint);
@@ -98,6 +102,8 @@
   .help ol { padding-left: 20px; margin: 0; }
   .help li { margin-bottom: 7px; }
   .help .note { margin-top: 16px; font-size: 0.82rem; color: var(--faint); }
+  .help a { color: var(--accent); text-decoration: none; }
+  .help a:hover { text-decoration: underline; }
 
   @media (max-width: 480px) { .wrap { padding: 28px 16px 60px; } h1 { font-size: 1.6rem; } }
 </style>
@@ -124,6 +130,21 @@
     <p class="note">
       Updates install over the old version and keep your data, as long as the version number went up.
       If an update refuses to install, uninstall the old one first and reinstall — that means the signing key changed.
+    </p>
+
+    <h2 style="margin-top: 30px;">Automatic updates (optional)</h2>
+    <p>
+      Tired of the "can harm your device" warning, or want updates to arrive on their own? Install through
+      <a href="https://github.com/ImranR98/Obtainium/releases/latest">Obtainium</a> — a small open-source
+      installer that pulls apps straight from this store's releases.
+    </p>
+    <ol>
+      <li>Install Obtainium once (itself a one-time sideload — same steps as above).</li>
+      <li>Back here, tap <strong>Obtainium</strong> on any app; it opens with everything pre-filled.</li>
+      <li>Tap <strong>Add</strong>, then let it install. From then on, updates are automatic — no warning.</li>
+    </ol>
+    <p class="note">
+      Obtainium itself is an APK download, so it shows the same one-time warning. Once it's in, nothing else does.
     </p>
   </section>
 </div>
@@ -157,6 +178,58 @@
            '/releases/download/' + encodeURIComponent(app.tag) + '/' + encodeURIComponent(app.file);
   }
 
+  function reEsc(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  // Build an "obtainium://app/<json>" deep link for one app. All apps share the
+  // one releases repo, so the config carries per-app filters (release title +
+  // asset name + version from the tag) to isolate this app — the same technique
+  // Obtainium's own multi-variant configs use.
+  function obtainiumUrl(cfg, app) {
+    var additional = {
+      includePrereleases: false,
+      fallbackToOlderReleases: true,
+      filterReleaseTitlesByRegEx: '^' + reEsc(app.name) + ' v',
+      filterReleaseNotesByRegEx: '',
+      verifyLatestTag: false,
+      sortMethodChoice: 'date',
+      useLatestAssetDateAsReleaseDate: false,
+      releaseTitleAsVersion: false,
+      'github-creds': '',
+      GHReqPrefix: '',
+      trackOnly: false,
+      versionExtractionRegEx: reEsc(app.slug) + '-v(.+)',
+      matchGroupToUse: '$1',
+      versionDetection: false,
+      releaseDateAsVersion: false,
+      useVersionCodeAsOSVersion: false,
+      apkFilterRegEx: '^' + reEsc(app.slug) + '-\\d',
+      invertAPKFilter: false,
+      autoApkFilterByArch: true,
+      appName: app.name,
+      appAuthor: cfg.owner,
+      shizukuPretendToBeGooglePlay: false,
+      allowInsecure: false,
+      exemptFromBackgroundUpdates: false,
+      skipUpdateNotifications: false,
+      about: app.tagline || '',
+      refreshBeforeDownload: false,
+      includeZips: false,
+      zippedApkFilterRegEx: ''
+    };
+    var appObj = {
+      id: app.appId || (cfg.repo + '-' + app.slug),
+      url: 'https://github.com/' + cfg.owner + '/' + cfg.repo,
+      author: cfg.owner,
+      name: app.name,
+      preferredApkIndex: 0,
+      additionalSettings: JSON.stringify(additional),
+      categories: [],
+      allowIdChange: true,
+      overrideSource: 'GitHub'
+    };
+    return 'obtainium://app/' + encodeURIComponent(JSON.stringify(appObj));
+  }
+
   function card(cfg, app) {
     var c = el('article', 'card');
 
@@ -182,6 +255,17 @@
       '<path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M4 21h16"/></svg>';
     a.appendChild(document.createTextNode('Download'));
     row.appendChild(a);
+
+    var obt = el('a', 'dl obt');
+    obt.href = obtainiumUrl(cfg, app);
+    obt.title = 'Add to Obtainium — installs without the browser warning and updates automatically';
+    obt.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v5h-5"/></svg>';
+    obt.appendChild(document.createTextNode('Obtainium'));
+    row.appendChild(obt);
+
     c.appendChild(row);
 
     if (app.sha256) {

@@ -11,7 +11,8 @@
                      "file":  "today-1.0.0.apk",
                      "size":  6751892,
                      "sha256":  "1896421c9770c218050ea59fac11845816f7948694c938e965ec0cec19736ee5",
-                     "published":  "2026-07-09"
+                     "published":  "2026-07-09",
+                     "appId":  "com.nathaniel.todoapp"
                  }
              ]
 }
