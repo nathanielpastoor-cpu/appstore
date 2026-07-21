@@ -6,12 +6,12 @@
                      "slug":  "today",
                      "name":  "Today",
                      "tagline":  "A todo list that forgets yesterday.",
-                     "version":  "1.0.0",
-                     "tag":  "today-v1.0.0",
-                     "file":  "today-1.0.0.apk",
-                     "size":  6751892,
-                     "sha256":  "1896421c9770c218050ea59fac11845816f7948694c938e965ec0cec19736ee5",
-                     "published":  "2026-07-09",
+                     "version":  "1.1.0",
+                     "tag":  "today-v1.1.0",
+                     "file":  "today-1.1.0.apk",
+                     "size":  6753273,
+                     "sha256":  "0753b5aa113eb82b0d33ce1783d612378be73669a8178f947579ac71b85a72d0",
+                     "published":  "2026-07-20",
                      "appId":  "com.nathaniel.todoapp"
                  }
              ]
