@@ -12,7 +12,69 @@
                      "size":  6760123,
                      "sha256":  "1663b751448991d9ddaf3baeeccbc9cc299451fd58f2c429016944c9ce42cd87",
                      "published":  "2026-07-27",
-                     "appId":  "com.nathaniel.todoapp"
+                     "appId":  "com.nathaniel.todoapp",
+                     "icon":  "icons/today.png",
+                     "notes":  "Six color themes (Dark, Light, Aero, Vista, Sunny Sky, Cyberpunk), Settings overlay, backup export/import, move tasks between projects, carried-forward marker, UI polish.",
+                     "history":  [
+                                     {
+                                         "version":  "1.2",
+                                         "published":  "2026-07-27",
+                                         "notes":  "Six color themes (Dark, Light, Aero, Vista, Sunny Sky, Cyberpunk), Settings overlay, backup export/import, move tasks between projects, carried-forward marker, UI polish."
+                                     },
+                                     {
+                                         "version":  "1.1.0",
+                                         "published":  "2026-07-20",
+                                         "notes":  "Home-screen widget (per-space, live refresh), scheduled tasks that surface on Today, desktop scrolling fixes."
+                                     },
+                                     {
+                                         "version":  "1.0.0",
+                                         "published":  "2026-07-09",
+                                         "notes":  "First release."
+                                     }
+                                 ]
+                 },
+                 {
+                     "slug":  "ingles-cada-dia",
+                     "name":  "InglÃ©s Cada DÃ­a",
+                     "tagline":  "One bit of English every day, for Azu.",
+                     "type":  "web",
+                     "url":  "https://una-cosa-al-dia-azu.netlify.app",
+                     "icon":  "icons/ingles-cada-dia.svg"
+                 },
+                 {
+                     "slug":  "house-model",
+                     "name":  "House Model",
+                     "tagline":  "The house\u0027s pipes and wires, in 3D.",
+                     "type":  "web",
+                     "url":  "https://housemodel-pastoor.netlify.app"
+                 },
+                 {
+                     "slug":  "crate-digger",
+                     "name":  "Crate Digger",
+                     "tagline":  "Tinder for record crate-digging.",
+                     "type":  "web",
+                     "url":  "https://nathanielpastoor-cpu.github.io/cratedigger/"
+                 },
+                 {
+                     "slug":  "la-mesa",
+                     "name":  "La Mesa",
+                     "tagline":  "Plan the family\u0027s meals for the week, together.",
+                     "version":  "1.0.0",
+                     "tag":  "la-mesa-v1.0.0",
+                     "file":  "la-mesa-1.0.0.apk",
+                     "size":  1241538,
+                     "sha256":  "11bfeb608e5f79131d4d68f9f366f0899feb1e007ac0c52e5b7cd01dc836a746",
+                     "published":  "2026-07-28",
+                     "appId":  "com.pastoor.lamesa",
+                     "icon":  "icons/la-mesa.png",
+                     "notes":  "First release. Weekly meal planning with live family sync.",
+                     "history":  [
+                                     {
+                                         "version":  "1.0.0",
+                                         "published":  "2026-07-28",
+                                         "notes":  "First release. Weekly meal planning with live family sync."
+                                     }
+                                 ]
                  }
              ]
 }
