@@ -40,6 +40,17 @@
     border-radius: 12px;
     padding: 18px 18px 16px;
   }
+  .card-head { display: flex; gap: 14px; align-items: flex-start; }
+  .icon, .icon-fb {
+    width: 56px; height: 56px; border-radius: 14px; flex-shrink: 0;
+    border: 1px solid var(--line); background: var(--panel-2);
+  }
+  .icon { object-fit: cover; }
+  .icon-fb {
+    display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-weight: 700; font-size: 1.4rem;
+  }
+  .card-body { flex: 1; min-width: 0; }
   .card-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .name { font-size: 1.2rem; font-weight: 600; margin: 0; }
   .ver {
@@ -48,6 +59,13 @@
     background: var(--panel-2); border: 1px solid var(--line);
     padding: 1px 7px; border-radius: 999px;
   }
+  .badge {
+    font-family: system-ui, sans-serif; font-size: 0.7rem; font-weight: 650;
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .badge.update { background: #fbbf24; color: #451a03; }
+  .badge.have { background: transparent; color: var(--faint); border: 1px solid var(--line); }
+  .badge.webkind { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
   .tagline { color: var(--muted); margin: 8px 0 0; font-size: 0.95rem; }
 
   .meta {
@@ -72,14 +90,21 @@
   .dl.obt { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
   .dl.obt:hover { background: rgba(52, 211, 153, 0.10); filter: none; }
 
-  details.hash { margin-top: 12px; }
-  details.hash summary {
+  details.hash, details.notes { margin-top: 12px; }
+  details.hash summary, details.notes summary {
     cursor: pointer; font-size: 0.78rem; color: var(--faint);
     font-family: system-ui, sans-serif; list-style: none;
   }
-  details.hash summary::-webkit-details-marker { display: none; }
-  details.hash summary::before { content: '▸ '; }
-  details.hash[open] summary::before { content: '▾ '; }
+  details.hash summary::-webkit-details-marker,
+  details.notes summary::-webkit-details-marker { display: none; }
+  details.hash summary::before, details.notes summary::before { content: '▸ '; }
+  details.hash[open] summary::before, details.notes[open] summary::before { content: '▾ '; }
+  .note-item { margin-top: 10px; font-size: 0.85rem; }
+  .note-item .nv {
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.72rem; color: var(--faint); display: block; margin-bottom: 2px;
+  }
+  .note-item .nt { color: var(--muted); }
   code.sha {
     display: block; margin-top: 8px; padding: 8px 10px;
     background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
@@ -230,45 +255,128 @@
     return 'obtainium://app/' + encodeURIComponent(JSON.stringify(appObj));
   }
 
+  /* localStorage markers: 'have:<slug>' = version last downloaded here;
+     'obt:<slug>' = added via Obtainium (auto-updates, so no badge nagging). */
+  function haveKey(app) { return 'have:' + app.slug; }
+  function viaObt(app) { try { return !!localStorage.getItem('obt:' + app.slug); } catch (e) { return false; } }
+  function haveVer(app) { try { return localStorage.getItem(haveKey(app)); } catch (e) { return null; } }
+  function mark(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+
+  // Deterministic hue per slug for the fallback "icon" tile.
+  function slugHue(slug) {
+    var h = 0;
+    for (var i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) % 360;
+    return h;
+  }
+
+  function appIcon(app) {
+    if (app.icon) {
+      var img = el('img', 'icon');
+      img.src = app.icon;
+      img.alt = '';
+      img.loading = 'lazy';
+      // A broken icon path degrades to the initial tile instead of a torn image.
+      img.onerror = function () { img.replaceWith(fallbackIcon(app)); };
+      return img;
+    }
+    return fallbackIcon(app);
+  }
+
+  function fallbackIcon(app) {
+    var fb = el('div', 'icon-fb', (app.name || '?').charAt(0).toUpperCase());
+    var hue = slugHue(app.slug || app.name || '?');
+    fb.style.background = 'hsl(' + hue + ', 35%, 22%)';
+    fb.style.color = 'hsl(' + hue + ', 70%, 70%)';
+    return fb;
+  }
+
   function card(cfg, app) {
+    var isWeb = app.type === 'web';
     var c = el('article', 'card');
+
+    var head = el('div', 'card-head');
+    head.appendChild(appIcon(app));
+    var body = el('div', 'card-body');
+    head.appendChild(body);
+    c.appendChild(head);
 
     var top = el('div', 'card-top');
     top.appendChild(el('h2', 'name', app.name));
     if (app.version) top.appendChild(el('span', 'ver', 'v' + app.version));
-    c.appendChild(top);
+    if (isWeb) top.appendChild(el('span', 'badge webkind', 'web app'));
+    if (!isWeb && app.version && !viaObt(app)) {
+      var have = haveVer(app);
+      if (have && have !== app.version) {
+        top.appendChild(el('span', 'badge update', 'update — you have v' + have));
+      } else if (have === app.version) {
+        top.appendChild(el('span', 'badge have', 'installed'));
+      }
+    }
+    body.appendChild(top);
 
-    if (app.tagline) c.appendChild(el('p', 'tagline', app.tagline));
+    if (app.tagline) body.appendChild(el('p', 'tagline', app.tagline));
 
     var meta = el('div', 'meta');
-    meta.appendChild(el('span', null, fmtSize(app.size)));
-    meta.appendChild(el('span', null, fmtDate(app.published)));
-    c.appendChild(meta);
+    if (isWeb) {
+      meta.appendChild(el('span', null, 'opens in the browser — nothing to install'));
+    } else {
+      meta.appendChild(el('span', null, fmtSize(app.size)));
+      meta.appendChild(el('span', null, fmtDate(app.published)));
+    }
+    body.appendChild(meta);
 
     var row = el('div', 'row');
-    var a = el('a', 'dl');
-    a.href = downloadUrl(cfg, app);
-    a.setAttribute('download', '');
-    a.innerHTML =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" ' +
-      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      '<path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M4 21h16"/></svg>';
-    a.appendChild(document.createTextNode('Download'));
-    row.appendChild(a);
+    if (isWeb) {
+      var w = el('a', 'dl');
+      w.href = app.url;
+      w.target = '_blank';
+      w.rel = 'noopener';
+      w.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>' +
+        '<path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>';
+      w.appendChild(document.createTextNode('Open app'));
+      row.appendChild(w);
+    } else {
+      var a = el('a', 'dl');
+      a.href = downloadUrl(cfg, app);
+      a.setAttribute('download', '');
+      a.addEventListener('click', function () { mark(haveKey(app), app.version); });
+      a.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M4 21h16"/></svg>';
+      a.appendChild(document.createTextNode('Download'));
+      row.appendChild(a);
 
-    var obt = el('a', 'dl obt');
-    obt.href = obtainiumUrl(cfg, app);
-    obt.title = 'Add to Obtainium — installs without the browser warning and updates automatically';
-    obt.innerHTML =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
-      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v5h-5"/></svg>';
-    obt.appendChild(document.createTextNode('Obtainium'));
-    row.appendChild(obt);
-
+      var obt = el('a', 'dl obt');
+      obt.href = obtainiumUrl(cfg, app);
+      obt.title = 'Add to Obtainium — installs without the browser warning and updates automatically';
+      obt.addEventListener('click', function () { mark('obt:' + app.slug, '1'); });
+      obt.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v5h-5"/></svg>';
+      obt.appendChild(document.createTextNode('Obtainium'));
+      row.appendChild(obt);
+    }
     c.appendChild(row);
 
-    if (app.sha256) {
+    var history = app.history || [];
+    if (history.length) {
+      var n = el('details', 'notes');
+      n.appendChild(el('summary', null, "What's new"));
+      history.forEach(function (h) {
+        var item = el('div', 'note-item');
+        item.appendChild(el('span', 'nv', 'v' + h.version + ' — ' + fmtDate(h.published)));
+        item.appendChild(el('span', 'nt', h.notes || '—'));
+        n.appendChild(item);
+      });
+      c.appendChild(n);
+    }
+
+    if (!isWeb && app.sha256) {
       var d = el('details', 'hash');
       d.appendChild(el('summary', null, 'Verify checksum'));
       d.appendChild(el('code', 'sha', app.sha256));
