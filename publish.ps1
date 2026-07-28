@@ -15,7 +15,8 @@ param(
   [Parameter(Mandatory)][string]$Apk,
   [Parameter(Mandatory)][string]$Version,
   [string]$Tagline = "",
-  [string]$Notes   = ""
+  [string]$Notes   = "",
+  [string]$Icon    = ""   # optional path to an icon image; copied to icons/<slug>.<ext>
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,12 +46,15 @@ function Invoke-Native {
 
 # --- preflight -------------------------------------------------------------
 if (-not (Test-Path -LiteralPath $Apk)) { throw "APK not found: $Apk" }
+if ($Icon -and -not (Test-Path -LiteralPath $Icon)) { throw "Icon not found: $Icon" }
 if ($Version -notmatch '^\d+\.\d+(\.\d+)?$') { throw "Version must look like 1.2 or 1.2.3 (got '$Version')" }
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw "GitHub CLI 'gh' is not installed." }
 
 if ((Invoke-Native gh @('auth','status') -Quiet) -ne 0) { throw "Not logged in to GitHub. Run: gh auth login" }
 
-$cfg = Get-Content -LiteralPath 'apps.json' -Raw | ConvertFrom-Json
+# Explicit UTF-8: PS 5.1's Get-Content otherwise reads BOM-less UTF-8 as ANSI
+# and silently mangles accented app names (Inglés -> InglÃ©s).
+$cfg = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'apps.json'), [System.Text.Encoding]::UTF8) | ConvertFrom-Json
 
 # --- derive ----------------------------------------------------------------
 $slug = ($Name.ToLowerInvariant() -replace '[^a-z0-9]+', '-').Trim('-')
@@ -108,9 +112,36 @@ if ($rc -ne 0) { throw "gh release create failed." }
 
 Remove-Item -Recurse -Force -LiteralPath $assetDir -ErrorAction SilentlyContinue
 
+# --- icon ------------------------------------------------------------------
+# Copied into the repo so GitHub Pages serves it next to apps.json.
+$iconRel = ''
+if ($Icon) {
+  New-Item -ItemType Directory -Force -Path (Join-Path $PSScriptRoot 'icons') | Out-Null
+  $iconExt = [System.IO.Path]::GetExtension($Icon).ToLowerInvariant()
+  $iconRel = "icons/$slug$iconExt"
+  Copy-Item -LiteralPath $Icon -Destination (Join-Path $PSScriptRoot $iconRel) -Force
+}
+
 # --- update manifest -------------------------------------------------------
 # ConvertFrom-Json gives PSCustomObjects; rebuild the list as hashtables so we
-# can add/replace entries without fighting the type system.
+# can add/replace entries without fighting the type system. The replaced
+# entry's icon and history carry forward: history gets this version prepended
+# (capped at 10), and an existing icon survives a publish without -Icon.
+$prevEntry = @($cfg.apps) | Where-Object { $_ -and $_.slug -eq $slug } | Select-Object -First 1
+if (-not $iconRel -and $prevEntry -and $prevEntry.icon) { $iconRel = $prevEntry.icon }
+
+$hist = @()
+$hist += ,([ordered]@{ version = $Version; published = $today; notes = $Notes })
+if ($prevEntry -and $prevEntry.history) {
+  foreach ($h in @($prevEntry.history)) {
+    if ($null -eq $h -or $h.version -eq $Version) { continue }
+    $hh = [ordered]@{}
+    foreach ($p in $h.PSObject.Properties) { $hh[$p.Name] = $p.Value }
+    $hist += ,$hh
+  }
+}
+$hist = @($hist | Select-Object -First 10)
+
 $entry = [ordered]@{
   slug      = $slug
   name      = $Name
@@ -122,6 +153,9 @@ $entry = [ordered]@{
   sha256    = $sha256
   published = $today
   appId     = $appId
+  icon      = $iconRel
+  notes     = $Notes
+  history   = $hist
 }
 
 $kept = @()
@@ -136,10 +170,10 @@ $kept += ,$entry
 
 $out = [ordered]@{ owner = $cfg.owner; repo = $cfg.repo; apps = $kept }
 $json = $out | ConvertTo-Json -Depth 6
-[System.IO.File]::WriteAllText((Join-Path $PSScriptRoot 'apps.json'), $json + "`n")
+[System.IO.File]::WriteAllText((Join-Path $PSScriptRoot 'apps.json'), $json + "`n", (New-Object System.Text.UTF8Encoding($false)))
 
 # --- push ------------------------------------------------------------------
-Invoke-Native git @('add','apps.json') | Out-Null
+Invoke-Native git @('add','apps.json','icons') | Out-Null
 Invoke-Native git @('commit','-m',"Publish $Name v$Version") -Quiet | Out-Null
 if ((Invoke-Native git @('push')) -ne 0) { throw "git push failed. apps.json is committed locally; push manually." }
 
