@@ -42,3 +42,23 @@ installed version — the user has to uninstall first and loses their data. So:
 | `index.html` | The storefront. Fetches `apps.json`, renders it. Self-contained. |
 | `apps.json` | Generated manifest — `owner`, `repo`, and one entry per app. |
 | `publish.ps1` | Build → upload → update manifest → push. |
+| `android/` | The store as an installable APK (added 2026-07-29). |
+
+## The store app (android/)
+
+A dependency-free native WebView shell (~13 KB APK) that loads the LIVE
+GitHub Pages site — store content updates never require an app update. What
+the shell adds over a browser tab:
+
+- APK links download through `DownloadManager` and hand the finished file
+  straight to the system installer (no browser "can harm your device" flow;
+  Android asks once to allow installs from this app).
+- `obtainium://` deep links and the web-app cards open in the matching
+  external app/browser instead of inside the shell.
+
+Build: `cd android && .\gradlew assembleRelease` →
+`android\app\build\outputs\apk\release\app-release.apk`.
+
+Signing: `android\appstore-release.jks` (alias `appstore`, credentials in
+`android\keystore.properties`, both gitignored). **Back that keystore up** —
+it is this app's key of record; losing it means everyone reinstalls.

@@ -1,0 +1,44 @@
+apply plugin: 'com.android.application'
+
+// Release signing: secrets live in android/keystore.properties (gitignored,
+// same pattern as the Today app). Without it the build falls back to debug
+// signing so `assembleRelease` still produces an installable APK locally.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+def hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace "com.nathaniel.appstore"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.nathaniel.appstore"
+        minSdk 26          // adaptive-icon-only resources; Android 8.0+
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}

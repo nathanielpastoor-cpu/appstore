@@ -1,0 +1,14 @@
+# Build output
+/build
+/app/build
+/.gradle
+*.apk
+
+# Machine-local SDK path
+local.properties
+
+# Release signing secrets — NEVER commit; losing the .jks means every
+# installed copy must be uninstalled/reinstalled, so BACK IT UP too.
+keystore.properties
+*.jks
+*.keystore

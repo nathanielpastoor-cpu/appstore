@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Framework Material dark theme: no appcompat dependency, light status-bar
+         icons over the store's near-black background. -->
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/store_bg</item>
+        <item name="android:colorBackground">@color/store_bg</item>
+        <item name="android:navigationBarColor">@color/store_bg</item>
+        <item name="android:statusBarColor">@color/store_bg</item>
+    </style>
+</resources>
