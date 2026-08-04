@@ -56,6 +56,14 @@
                      "url":  "https://nathanielpastoor-cpu.github.io/cratedigger/"
                  },
                  {
+                     "slug":  "my-financial-situation",
+                     "name":  "My Financial Situation",
+                     "tagline":  "The whole money picture, synced from the banks.",
+                     "type":  "web",
+                     "url":  "https://budget.oxidetapes.com",
+                     "icon":  "icons/my-financial-situation.png"
+                 },
+                 {
                      "slug":  "la-mesa",
                      "name":  "La Mesa",
                      "tagline":  "Plan the family\u0027s meals for the week, together.",
